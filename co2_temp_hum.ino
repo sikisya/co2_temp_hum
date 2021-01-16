@@ -1,3 +1,4 @@
+#include <cmath>
 #include <SoftwareSerial.h>
 #include <DHT.h>
 #include <U8g2lib.h>
@@ -33,6 +34,32 @@ SoftwareSerial MH_Z19B(MHZ19B_RX_PIN, MHZ19B_TX_PIN);
 
 // OLED Display
 U8G2_SSD1306_128X64_NONAME_F_SW_I2C display(U8G2_R0, OLED_SCL_PIN, OLED_SDA_PIN);
+
+void draw_nixie(const int x, const int y, const int number) {
+  // max 9999
+  int num = number;
+  if (num > 9999) {
+    num = 9999;
+  }
+
+  // count digit
+  int digit = 1;
+  {
+    int tmp = num;
+    while (tmp /= 10) {
+      digit++;
+    }
+  }
+
+  // draw
+  while (digit) {
+    int tmp = std::pow(10, digit - 1);
+    int n = num / tmp;
+    display.drawXBMP(x + ((NIXIE_WIDTH + 2) * (4 - digit)), y, NIXIE_WIDTH, NIXIE_HEIGHT, nixie[n]);
+    num %= tmp;
+    digit--;
+  }
+}
 
 void calibrate_zero_point() {
   MH_Z19B.write(set_zero, sizeof(set_zero));
@@ -97,31 +124,28 @@ void loop() {
 
     // CO2
     display.setFont(u8g2_font_lastapprenticebold_tr);
-    display.drawStr(0, 26, "CO2:");
-    display.setFont(u8g2_font_logisoso26_tn);
-    display.drawStr(24, 26, co2_val);
-    display.setFont(u8g2_font_mercutio_basic_nbp_t_all);
-    display.drawStr(109, 24, "ppm");
+    display.drawStr(0, 15, "CO2:");
+    draw_nixie(25, 3, ppm);
 
     // hr
-    display.drawHLine(1, 28, SCREEN_WIDTH);
+    display.drawHLine(1, 46, SCREEN_WIDTH);
 
     // Temp & Hum
     {
-      int offset_x_temp_hum = 57;
-      display.setFont(u8g2_font_logisoso16_tn);
+      display.setFont(u8g2_font_crox4t_tn);
       
       // Temp
-      display.drawXBMP(0 + offset_x_temp_hum, 30, THERMOMETER_WIDTH, THERMOMETER_HEIGHT, thermometer_icon);
-      display.drawStr(15 + offset_x_temp_hum, 46, temp_val.c_str());
-      display.drawXBMP(62 + offset_x_temp_hum, 36, CELSIUS_ICON_WIDTH, CELSIUS_ICON_HEIGHT, celsius_icon);
-  
+      display.drawXBMP(0, 48, THERMOMETER_WIDTH, THERMOMETER_HEIGHT, thermometer_icon);
+      display.drawStr(13, 63, temp_val.c_str());
+      display.drawXBMP(53, 53, CELSIUS_ICON_WIDTH, CELSIUS_ICON_HEIGHT, celsius_icon);
+
+      display.drawLine(64, 48, 64, 63);
+      
       // Hum
-      display.drawXBMP(0 + offset_x_temp_hum, 48, HYGROMETER_WIDTH, HYGROMETER_HEIGHT, hygrometer_icon);
-      display.drawStr(15 + offset_x_temp_hum, 64, hum_val.c_str());
-      display.drawXBMP(62 + offset_x_temp_hum, 54, PERCENT_ICON_WIDTH, PERCENT_ICON_HEIGHT, percent_icon);
+      display.drawXBMP(66, 48, HYGROMETER_WIDTH, HYGROMETER_HEIGHT, hygrometer_icon);
+      display.drawStr(79, 63, hum_val.c_str());
+      display.drawXBMP(119, 53, PERCENT_ICON_WIDTH, PERCENT_ICON_HEIGHT, percent_icon);
     }
-    
     display.sendBuffer();
   }
   
