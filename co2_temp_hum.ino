@@ -55,7 +55,7 @@ void draw_nixie(const int x, const int y, const int number) {
   while (digit) {
     int tmp = std::pow(10, digit - 1);
     int n = num / tmp;
-    display.drawXBMP(x + ((NIXIE_WIDTH + 2) * (4 - digit)), y, NIXIE_WIDTH, NIXIE_HEIGHT, nixie[n]);
+    display.drawXBMP(x + ((NIXIE_WIDTH + 1) * (4 - digit)), y, NIXIE_WIDTH, NIXIE_HEIGHT, nixie[n]);
     num %= tmp;
     digit--;
   }
@@ -73,18 +73,18 @@ void setup() {
 
   display.begin();
   display.clearBuffer();
-  
+
   display.setDrawColor(1);
   display.drawXBMP(0, 0, TITLE_LOGO_WIDTH, TITLE_LOGO_HEIGHT, title_logo);
   display.sendBuffer();
-  
+
   delay(2000);
 
   attachInterrupt(CALIBRATION_PIN, calibrate_zero_point, RISING);
 }
 
 void loop() {
-  // Get CO2 
+  // Get CO2
   byte responseMessage[9] = {0};
   MH_Z19B.write(request_co2, sizeof(request_co2));
   MH_Z19B.readBytes(responseMessage, sizeof(responseMessage));
@@ -111,7 +111,7 @@ void loop() {
     String hum_val(humidity);
     char co2_val[6];
     sprintf(co2_val, "%5d", ppm);
-    
+
     // alert
     if (ppm > 2000) {
       display.setDrawColor(1);
@@ -123,9 +123,10 @@ void loop() {
     }
 
     // CO2
+    draw_nixie(4, 4, ppm);
+    display.drawXBMP(104, 8, CO2_ICON_WIDTH, CO2_ICON_HEIGHT, co2_icon);
     display.setFont(u8g2_font_lastapprenticebold_tr);
-    display.drawStr(0, 15, "CO2:");
-    draw_nixie(25, 3, ppm);
+    display.drawStr(102, 42, "PPM");
 
     // hr
     display.drawHLine(1, 46, SCREEN_WIDTH);
@@ -133,14 +134,14 @@ void loop() {
     // Temp & Hum
     {
       display.setFont(u8g2_font_crox4t_tn);
-      
+
       // Temp
       display.drawXBMP(0, 48, THERMOMETER_WIDTH, THERMOMETER_HEIGHT, thermometer_icon);
       display.drawStr(13, 63, temp_val.c_str());
       display.drawXBMP(53, 53, CELSIUS_ICON_WIDTH, CELSIUS_ICON_HEIGHT, celsius_icon);
 
       display.drawLine(64, 48, 64, 63);
-      
+
       // Hum
       display.drawXBMP(66, 48, HYGROMETER_WIDTH, HYGROMETER_HEIGHT, hygrometer_icon);
       display.drawStr(79, 63, hum_val.c_str());
@@ -148,6 +149,6 @@ void loop() {
     }
     display.sendBuffer();
   }
-  
+
   delay(5000);
 }
